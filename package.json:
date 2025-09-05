@@ -1,14 +1,18 @@
 {
-  "name": "roblox-multi-account-dashboard",
-  "version": "1.0.3",
+  "name": "roblox-multi-account-backend",
+  "version": "1.0.4",
   "private": true,
-  "description": "Local/hosted backend + GitHub Pages friendly frontend",
+  "description": "Node backend for Roblox multi-account actions",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo \"no build step\""
   },
   "dependencies": {
     "express": "^4.19.2",
     "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=16"
   }
 }
