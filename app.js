@@ -1,3 +1,5 @@
+// Frontend controller with explicit API base + health check + animated UI hooks
+
 const accountsTextarea = document.getElementById('accounts');
 const commandInput = document.getElementById('commandInput');
 const output = document.getElementById('output');
@@ -9,6 +11,13 @@ const chips = document.querySelectorAll('[data-example]');
 const bar = document.getElementById('bar');
 const accountCount = document.getElementById('accountCount');
 const toasts = document.getElementById('toasts');
+
+// Always talk to the Node backend on 3000. If you change the port in server.js, update this too.
+const API_BASE = 'http://localhost:3000';
+
+function apiUrl(path) {
+  return API_BASE.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path);
+}
 
 function append(line, cls = '') {
   const div = document.createElement('div');
@@ -83,12 +92,13 @@ async function run() {
   }
 
   output.textContent = '';
+  append(`Using API: ${API_BASE}`, 'muted');
   append(`Running "${cmd}" for ${accounts.length} account(s)...`, 'muted');
   setLoading(true);
   setProgress(18);
 
   try {
-    const res = await fetch('/api/run', {
+    const res = await fetch(apiUrl('/api/run'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accounts, command: cmd })
@@ -109,7 +119,6 @@ async function run() {
       return;
     }
 
-    // Animate the rendering of results
     let i = 0;
     for (const r of data.results) {
       i++;
@@ -180,5 +189,19 @@ commandInput.addEventListener('input', () => {
   localStorage.setItem(LS_COMMAND, commandInput.value.trim());
 });
 
+async function pingBackend() {
+  try {
+    const res = await fetch(apiUrl('/api/health'));
+    if (res.ok) {
+      append(`Backend online at ${API_BASE}`, 'ok');
+    } else {
+      append(`Backend responded ${res.status} at ${API_BASE}`, 'err');
+    }
+  } catch {
+    append(`Cannot reach backend at ${API_BASE}. Make sure "npm start" is running.`, 'err');
+  }
+}
+
 loadFromStorage();
 append('Ready. Paste accounts, type a command, and click Run.', 'muted');
+pingBackend();
