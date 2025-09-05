@@ -1,24 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Roblox Multi-Account Command Dashboard</title>
-<style>
-body { font-family: Arial; padding: 20px; background: #f0f0f0; }
-textarea, input { width: 100%; margin: 5px 0; padding: 8px; }
-button { padding: 10px; margin: 5px 0; width: 100%; }
-#output { white-space: pre-line; background: #fff; padding: 10px; border: 1px solid #ccc; height: 200px; overflow-y: scroll;}
-</style>
+  <meta charset="UTF-8" />
+  <title>Roblox Multi-Account Command Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+    textarea, input { width: 100%; margin: 5px 0; padding: 8px; box-sizing: border-box; }
+    button { padding: 10px; margin: 5px 0; width: 100%; cursor: pointer; }
+    #output { white-space: pre-line; background: #fff; padding: 10px; border: 1px solid #ccc; height: 260px; overflow-y: scroll; }
+    .note { font-size: 12px; color: #444; line-height: 1.4; margin-bottom: 8px; }
+    .warn { color: #b00; font-weight: bold; }
+  </style>
 </head>
 <body>
-<h1>Roblox Multi-Account Command Dashboard</h1>
+  <h1>Roblox Multi-Account Command Dashboard</h1>
 
-<textarea id="accounts" placeholder="Paste your accounts (username:password per line)"></textarea>
-<input id="commandInput" placeholder="Enter command, e.g., Follow UsernameHere" />
-<button id="runCommand">Run Command for All Accounts</button>
+  <div class="note warn">
+    Important:
+    <br>- Do NOT paste passwords. Use .ROBLOSECURITY session cookies for accounts you own.
+    <br>- Run this locally. Never deploy this publicly.
+    <br>- Follow Roblox Terms of Use and rate limits.
+  </div>
 
-<div id="output"></div>
+  <textarea id="accounts" placeholder="One account per line: Label|.ROBLOSECURITY cookie
+Example:
+Main|_YOUR_COOKIE_VALUE
+Alt1|_ANOTHER_COOKIE_VALUE"></textarea>
 
-<script src="app.js"></script>
+  <input id="commandInput" placeholder="Enter command, e.g., Follow Builderman OR AcceptFriends" />
+
+  <button id="runCommand">Run Command for All Accounts</button>
+
+  <div id="output"></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
