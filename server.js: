@@ -1,0 +1,206 @@
+// Run with: node server.js
+// Requires Node 18+ (for global fetch) and that you run locally.
+// This server serves the frontend and provides /api/run to perform actions.
+
+const express = require('express');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json({ limit: '1mb' }));
+app.use(express.static(path.join(__dirname)));
+
+app.post('/api/run', async (req, res) => {
+  try {
+    const { accounts, command } = req.body || {};
+    if (!Array.isArray(accounts) || !accounts.length || typeof command !== 'string') {
+      return res.status(400).json({ error: 'Invalid payload.' });
+    }
+    const results = [];
+    for (const acct of accounts) {
+      const label = acct.label || 'Account';
+      const cookie = (acct.cookie || '').trim();
+      if (!cookie) {
+        results.push({ label, ok: false, message: 'Missing cookie.' });
+        continue;
+      }
+
+      try {
+        const result = await handleCommand(label, cookie, command);
+        results.push({ label, ok: true, ...result });
+      } catch (err) {
+        results.push({ label, ok: false, message: err?.message || String(err) });
+      }
+
+      // small delay to avoid hammering the APIs
+      await delay(400);
+    }
+    res.json({ results });
+  } catch (e) {
+    res.status(500).send(e?.message || 'Server error');
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
+
+// -------------- Roblox helpers --------------
+
+async function handleCommand(label, cookie, commandRaw) {
+  const command = commandRaw.trim();
+  const lower = command.toLowerCase();
+
+  // Validate the cookie by checking the authenticated user
+  const me = await getAuthenticatedUser(cookie);
+  if (!me?.id) throw new Error('Authentication failed. Cookie may be invalid.');
+
+  if (lower.startsWith('follow ')) {
+    const targetName = command.split(' ').slice(1).join(' ').trim();
+    if (!targetName) throw new Error('Missing username to follow.');
+    const xcsrf = await getXcsrf(cookie);
+
+    const targetId = await getUserIdByUsername(targetName, cookie, xcsrf);
+    await followUser(cookie, xcsrf, targetId);
+
+    return {
+      action: 'follow',
+      message: `${me.name} (${me.id}) now follows ${targetName} (${targetId})`
+    };
+  }
+
+  if (lower === 'acceptfriends' || lower === 'acceptfriend' || lower === 'acceptfriends()') {
+    const xcsrf = await getXcsrf(cookie);
+    const count = await acceptAllFriendRequests(cookie, xcsrf);
+    return {
+      action: 'acceptfriends',
+      message: `${me.name} (${me.id}) accepted ${count} friend request(s)`
+    };
+  }
+
+  if (lower.startsWith('join ')) {
+    // Not supported via web APIs; requires launching the Roblox client.
+    throw new Error('Join is not supported via web APIs. You must launch the Roblox client to join games.');
+  }
+
+  throw new Error(`Command "${command}" not recognized or not supported.`);
+}
+
+async function getAuthenticatedUser(cookie) {
+  const res = await fetch('https://users.roblox.com/v1/users/authenticated', {
+    headers: {
+      'Cookie': `.ROBLOSECURITY=${cookie}`
+    }
+  });
+  if (!res.ok) {
+    throw new Error(`Auth check failed (${res.status}).`);
+  }
+  return res.json();
+}
+
+async function getXcsrf(cookie) {
+  // Intentionally POST to /v2/login without a token to get a fresh X-CSRF-Token
+  const res = await fetch('https://auth.roblox.com/v2/login', {
+    method: 'POST',
+    headers: {
+      'Cookie': `.ROBLOSECURITY=${cookie}`
+    }
+  });
+
+  const token = res.headers.get('x-csrf-token');
+  if (!token) throw new Error('Failed to obtain X-CSRF token.');
+  return token;
+}
+
+async function getUserIdByUsername(username, cookie, xcsrf) {
+  const res = await fetch('https://users.roblox.com/v1/usernames/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': `.ROBLOSECURITY=${cookie}`,
+      'x-csrf-token': xcsrf
+    },
+    body: JSON.stringify({
+      usernames: [username],
+      excludeBannedUsers: false
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await safeText(res);
+    throw new Error(`Username lookup failed (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  const match = data?.data?.[0];
+  if (!match?.id) throw new Error(`User "${username}" not found.`);
+  return match.id;
+}
+
+async function followUser(cookie, xcsrf, targetUserId) {
+  const res = await fetch(`https://friends.roblox.com/v1/users/${targetUserId}/follow`, {
+    method: 'POST',
+    headers: {
+      'Cookie': `.ROBLOSECURITY=${cookie}`,
+      'x-csrf-token': xcsrf
+    }
+  });
+  if (!res.ok) {
+    const errText = await safeText(res);
+    throw new Error(`Follow failed (${res.status}): ${errText}`);
+  }
+}
+
+async function listFriendRequests(cookie) {
+  const urlsToTry = [
+    'https://friends.roblox.com/v1/my/friends/requests?limit=100&sortOrder=Asc',
+    // fallback pattern if the above changes in the future
+  ];
+
+  for (const url of urlsToTry) {
+    const res = await fetch(url, {
+      headers: {
+        'Cookie': `.ROBLOSECURITY=${cookie}`
+      }
+    });
+    if (!res.ok) continue;
+    const data = await res.json();
+    if (Array.isArray(data?.data)) return data.data;
+  }
+  throw new Error('Could not fetch friend requests.');
+}
+
+async function acceptAllFriendRequests(cookie, xcsrf) {
+  const requests = await listFriendRequests(cookie);
+  let count = 0;
+  for (const r of requests) {
+    const requesterId = r.requesterUserId || r.requesterId || r.id || r.userId;
+    if (!requesterId) continue;
+    const res = await fetch(`https://friends.roblox.com/v1/users/${requesterId}/accept-friend-request`, {
+      method: 'POST',
+      headers: {
+        'Cookie': `.ROBLOSECURITY=${cookie}`,
+        'x-csrf-token': xcsrf
+      }
+    });
+    if (res.ok) {
+      count++;
+    }
+    await delay(250); // gentle pacing
+  }
+  return count;
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function safeText(res) {
+  try {
+    const t = await res.text();
+    return t || '';
+  } catch {
+    return '';
+  }
+}
