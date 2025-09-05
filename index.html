@@ -5,188 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Roblox Multi-Account Command Dashboard</title>
 
+  <!-- Set this to your backend URL when hosting the UI on GitHub Pages -->
+  <!-- Example after deploying backend to Render/Railway/ngrok:
+       https://your-app.onrender.com  OR  https://abcd-1234.ngrok-free.app -->
+  <script>
+    window.API_BASE = 'https://YOUR-BACKEND-URL-HERE'; // <-- change this
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
+    /* same styled UI as before */
     :root{
-      --bg: #0b1020;
-      --card: rgba(255,255,255,0.08);
-      --border: rgba(255,255,255,0.12);
-      --text: #f3f6ff;
-      --muted: #b5c2ff;
-      --accent-1: #7c3aed;
-      --accent-2: #06b6d4;
-      --accent-3: #10b981;
-      --error: #ff5c7a;
-      --warn: #ffcc66;
-      --radius: 14px;
-      --shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      --bg: #0b1020; --card: rgba(255,255,255,0.08); --border: rgba(255,255,255,0.12);
+      --text: #f3f6ff; --muted: #b5c2ff; --accent-1: #7c3aed; --accent-2: #06b6d4; --accent-3: #10b981;
+      --error: #ff5c7a; --warn: #ffcc66; --radius: 14px; --shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--text);
-      background: radial-gradient(1200px 600px at 20% 10%, #111a35 0%, transparent 70%) no-repeat,
-                  radial-gradient(1000px 600px at 90% 90%, #0d1a2f 0%, transparent 60%) no-repeat,
-                  var(--bg);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      overflow-x:hidden;
-    }
-    body::before, body::after{
-      content:"";
-      position:fixed; inset:auto;
-      width:60vmax; height:60vmax; border-radius:50%;
-      filter: blur(70px);
-      z-index:-1; opacity:0.65;
-      pointer-events:none;
-      mix-blend-mode:screen;
-      transform: translateZ(0);
-    }
-    body::before{
-      background: radial-gradient(circle at 30% 30%, rgba(124,58,237,0.6), transparent 60%),
-                  radial-gradient(circle at 70% 70%, rgba(6,182,212,0.5), transparent 60%);
-      top:-15vmax; left:-10vmax; animation: float1 22s ease-in-out infinite;
-    }
-    body::after{
-      background: radial-gradient(circle at 40% 60%, rgba(16,185,129,0.55), transparent 60%),
-                  radial-gradient(circle at 80% 20%, rgba(124,58,237,0.45), transparent 60%);
-      bottom:-20vmax; right:-10vmax; animation: float2 28s ease-in-out infinite;
-    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;color:var(--text);background: radial-gradient(1200px 600px at 20% 10%, #111a35 0%, transparent 70%) no-repeat,
+      radial-gradient(1000px 600px at 90% 90%, #0d1a2f 0%, transparent 60%) no-repeat, var(--bg);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; overflow-x:hidden;}
+    body::before, body::after{content:"";position:fixed;inset:auto;width:60vmax;height:60vmax;border-radius:50%;filter: blur(70px);z-index:-1;opacity:0.65;pointer-events:none;mix-blend-mode:screen;transform: translateZ(0);}
+    body::before{background: radial-gradient(circle at 30% 30%, rgba(124,58,237,0.6), transparent 60%), radial-gradient(circle at 70% 70%, rgba(6,182,212,0.5), transparent 60%);top:-15vmax;left:-10vmax;animation: float1 22s ease-in-out infinite;}
+    body::after{background: radial-gradient(circle at 40% 60%, rgba(16,185,129,0.55), transparent 60%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.45), transparent 60%);bottom:-20vmax;right:-10vmax;animation: float2 28s ease-in-out infinite;}
     @keyframes float1{0%{transform:translate(-2vmax,-1vmax) scale(1)}50%{transform:translate(4vmax,2vmax) scale(1.1)}100%{transform:translate(-2vmax,-1vmax) scale(1)}}
     @keyframes float2{0%{transform:translate(2vmax,0) scale(1)}50%{transform:translate(-4vmax,-2vmax) scale(1.08)}100%{transform:translate(2vmax,0) scale(1)}}
-
     .container{width:min(1200px, 94vw); margin:40px auto;}
     .header{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:18px;}
-    .title{
-      margin:0; font-size:clamp(28px, 3vw, 42px); font-weight:800; letter-spacing:0.3px;
-      background: linear-gradient(90deg, #fff 0%, #a6b3ff 40%, #6ae6ff 70%, #9d7cff 100%);
-      -webkit-background-clip:text; background-clip:text; color:transparent; position:relative;
-    }
-    .title::after{
-      content:""; position:absolute; left:-5%; top:60%; width:110%; height:6px; border-radius:6px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-      filter: blur(6px); opacity:0.35; animation: shimmer 4s ease-in-out infinite;
-    }
+    .title{margin:0; font-size:clamp(28px, 3vw, 42px); font-weight:800; letter-spacing:0.3px;
+      background: linear-gradient(90deg, #fff 0%, #a6b3ff 40%, #6ae6ff 70%, #9d7cff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; position:relative;}
+    .title::after{content:""; position:absolute; left:-5%; top:60%; width:110%; height:6px; border-radius:6px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); filter: blur(6px); opacity:0.35; animation: shimmer 4s ease-in-out infinite;}
     @keyframes shimmer{0%{transform:translateX(-30%)}50%{transform:translateX(30%)}100%{transform:translateX(-30%)}}
-
-    .callout{
-      padding:12px 14px; border:1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
-      border-radius:12px; box-shadow: var(--shadow); color:var(--muted); font-size:14px; line-height:1.45;
-      display:flex; gap:10px; align-items:flex-start;
-    }
+    .callout{padding:12px 14px; border:1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)); border-radius:12px; box-shadow: var(--shadow); color:var(--muted); font-size:14px; line-height:1.45; display:flex; gap:10px; align-items:flex-start;}
     .callout .dot{width:10px; height:10px; border-radius:50%; background: var(--warn); margin-top:6px; box-shadow:0 0 14px var(--warn); flex:0 0 auto;}
-
-    .grid{display:grid; gap:16px; grid-template-columns: 1.1fr 0.9fr;}
-    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
-      border:1px solid var(--border); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding:16px; position:relative; overflow:hidden;
-    }
-    .card::before{
-      content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px);
-      background: conic-gradient(from 180deg at 50% 50%,
-        rgba(124,58,237,0.2), rgba(6,182,212,0.2), rgba(16,185,129,0.2), rgba(124,58,237,0.2));
-      filter: blur(18px); opacity:0.25; z-index:-1;
-    }
-
+    .grid{display:grid; gap:16px; grid-template-columns: 1.1fr 0.9fr;} @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+    .card{background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04)); border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding:16px; position:relative; overflow:hidden;}
+    .card::before{content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px);
+      background: conic-gradient(from 180deg at 50% 50%, rgba(124,58,237,0.2), rgba(6,182,212,0.2), rgba(16,185,129,0.2), rgba(124,58,237,0.2)); filter: blur(18px); opacity:0.25; z-index:-1;}
     label{display:flex; align-items:center; gap:10px; color:#eaf0ff; font-weight:600; margin-bottom:8px;}
     .count-badge{font-size:12px; color:#d9e2ff; background:rgba(255,255,255,0.08); padding:4px 8px; border:1px solid var(--border); border-radius:999px;}
-
-    textarea, input{
-      width:100%; color:var(--text); background:rgba(255,255,255,0.06);
-      border:1px solid var(--border); outline:none; padding:12px 14px; border-radius:12px;
-      transition: border-color .2s, box-shadow .2s, transform .03s ease; caret-color: var(--accent-2);
-    }
-    textarea:focus, input:focus{border-color: rgba(106, 230, 255, 0.7); box-shadow: 0 0 0 4px rgba(106, 230, 255, 0.12);}
-    textarea{min-height:160px; resize:vertical; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; line-height:1.45;}
+    textarea,input{width:100%; color:var(--text); background:rgba(255,255,255,0.06); border:1px solid var(--border); outline:none; padding:12px 14px; border-radius:12px; transition:border-color .2s, box-shadow .2s, transform .03s ease; caret-color: var(--accent-2);}
+    textarea:focus,input:focus{border-color: rgba(106, 230, 255, 0.7); box-shadow: 0 0 0 4px rgba(106, 230, 255, 0.12);}
+    textarea{min-height:160px; resize:vertical; font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; line-height:1.45;}
     input{height:46px;}
-
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-    .btn{
-      --bg1:#8b5cf6; --bg2:#06b6d4;
-      position:relative; display:inline-flex; align-items:center; justify-content:center;
-      gap:8px; padding:12px 16px; height:46px; min-width:160px;
-      background: linear-gradient(90deg, var(--bg1), var(--bg2));
-      color:white; border:none; border-radius:12px; cursor:pointer; font-weight:700;
-      box-shadow: 0 10px 30px rgba(11, 173, 225, 0.35);
-      transition: transform .08s ease, box-shadow .2s ease, filter .2s ease; user-select:none;
-    }
-    .btn:hover{ filter:brightness(1.06); box-shadow:0 12px 36px rgba(11, 173, 225, 0.45);}
-    .btn:active{ transform: translateY(1px) scale(0.995); }
-    .btn .spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,0.45); border-top-color:#fff; border-radius:50%; animation: spin .8s linear infinite; display:none;}
-    @keyframes spin{to{transform:rotate(360deg)}} .btn.loading .spinner{ display:inline-block; } .btn.loading .text{ opacity:0.8; }
-
-    .btn.secondary{
-      background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
-      color:#e9f1ff; border:1px solid var(--border); box-shadow:none; min-width:auto; height:42px; padding:10px 12px;
-    }
-
-    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 0; }
-    .chip{
-      font-size:12px; color:#d6e3ff; padding:6px 10px; border-radius:999px;
-      border:1px solid var(--border); background:rgba(255,255,255,0.05); cursor:pointer;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease; user-select:none;
-    }
-    .chip:hover{ transform: translateY(-1px); background:rgba(255,255,255,0.09); border-color:rgba(255,255,255,0.18); }
-
-    .progress{ margin-top:10px; background: rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:999px; height:12px; overflow:hidden; }
-    .progress .bar{
-      width:0%; height:100%;
-      background: linear-gradient(90deg, var(--accent-2), var(--accent-1), var(--accent-3));
-      background-size:200% 100%; animation: progress-stripes 1.3s linear infinite;
-      border-radius:999px; transition: width .25s ease;
-    }
-    @keyframes progress-stripes{ 0%{background-position:0 0} 100%{background-position:200% 0} }
-
-    .terminal{ background: rgba(7,12,24,0.7); border:1px solid var(--border); border-radius:12px; overflow:hidden; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .term-top{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)); border-bottom:1px solid var(--border); }
-    .dots{ display:flex; gap:8px; }
-    .dot-r, .dot-y, .dot-g{ width:10px; height:10px; border-radius:50%; }
-    .dot-r{ background:#ff5c7a; box-shadow:0 0 10px #ff5c7a75; }
-    .dot-y{ background:#ffd166; box-shadow:0 0 10px #ffd16675; }
-    .dot-g{ background:#5cffb6; box-shadow:0 0 10px #5cffb675; }
-
-    #output{ height:320px; overflow:auto; padding:12px; white-space:pre-wrap; line-height:1.45; color:#e7edff; }
-    .log-line{ opacity:0; transform: translateY(6px); animation: drop .25s ease forwards; }
-    @keyframes drop{ to { opacity:1; transform: translateY(0); } }
-    .ok{ color:#b1ffd7; } .err{ color:#ffc5d1; } .muted{ color:#b5c2ff; }
-
-    #toasts{ position: fixed; right: 18px; bottom: 18px; display:flex; flex-direction:column; gap:10px; z-index:9999; }
-    .toast{ background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05)); border:1px solid var(--border); padding:10px 12px; border-radius:12px; min-width: 200px; box-shadow: var(--shadow); animation: toast-in .25s ease forwards; opacity:0; transform: translateY(8px); font-size:14px; }
-    .toast.ok{ border-color: rgba(16,185,129,0.45); } .toast.err{ border-color: rgba(255,92,122,0.45); }
-    @keyframes toast-in{ to { opacity:1; transform: translateY(0); } }
-
-    .footer-note{ margin-top:10px; font-size:12px; color:var(--muted); }
-    .link{ color:#a0e9ff; text-decoration:none; border-bottom:1px dotted rgba(160,233,255,0.5); }
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .btn{--bg1:#8b5cf6; --bg2:#06b6d4; position:relative; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; height:46px; min-width:160px; background:linear-gradient(90deg,var(--bg1),var(--bg2)); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:700; box-shadow: 0 10px 30px rgba(11, 173, 225, 0.35); transition: transform .08s ease, box-shadow .2s ease, filter .2s ease; user-select:none;}
+    .btn:hover{filter:brightness(1.06); box-shadow:0 12px 36px rgba(11, 173, 225, 0.45);} .btn:active{transform: translateY(1px) scale(0.995);}
+    .btn .spinner{width:16px; height:16px; border:2px solid rgba(255,255,255,0.45); border-top-color:#fff; border-radius:50%; animation: spin .8s linear infinite; display:none;} @keyframes spin{to{transform:rotate(360deg)}}
+    .btn.loading .spinner{display:inline-block;} .btn.loading .text{opacity:0.8;}
+    .btn.secondary{background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06)); color:#e9f1ff; border:1px solid var(--border); box-shadow:none; min-width:auto; height:42px; padding:10px 12px;}
+    .chips{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 0;} .chip{font-size:12px; color:#d6e3ff; padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,0.05); cursor:pointer; transition: transform .08s ease, background .2s ease, border-color .2s ease; user-select:none;}
+    .chip:hover{transform: translateY(-1px); background:rgba(255,255,255,0.09); border-color:rgba(255,255,255,0.18);}
+    .progress{margin-top:10px; background: rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:999px; height:12px; overflow:hidden;}
+    .progress .bar{width:0%; height:100%; background: linear-gradient(90deg, var(--accent-2), var(--accent-1), var(--accent-3)); background-size:200% 100%; animation: progress-stripes 1.3s linear infinite; border-radius:999px; transition: width .25s ease;}
+    @keyframes progress-stripes{0%{background-position:0 0}100%{background-position:200% 0}}
+    .terminal{background: rgba(7,12,24,0.7); border:1px solid var(--border); border-radius:12px; overflow:hidden; font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+    .term-top{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)); border-bottom:1px solid var(--border);}
+    .dots{display:flex; gap:8px;} .dot-r,.dot-y,.dot-g{width:10px; height:10px; border-radius:50%;}
+    .dot-r{background:#ff5c7a; box-shadow:0 0 10px #ff5c7a75;} .dot-y{background:#ffd166; box-shadow:0 0 10px #ffd16675;} .dot-g{background:#5cffb6; box-shadow:0 0 10px #5cffb675;}
+    #output{height:320px; overflow:auto; padding:12px; white-space:pre-wrap; line-height:1.45; color:#e7edff;}
+    .log-line{opacity:0; transform: translateY(6px); animation: drop .25s ease forwards;} @keyframes drop{to{opacity:1; transform: translateY(0)}}
+    .ok{color:#b1ffd7;} .err{color:#ffc5d1;} .muted{color:#b5c2ff;}
+    #toasts{position: fixed; right: 18px; bottom: 18px; display:flex; flex-direction:column; gap:10px; z-index:9999;}
+    .toast{background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05)); border:1px solid var(--border); padding:10px 12px; border-radius:12px; min-width: 200px; box-shadow: var(--shadow); animation: toast-in .25s ease forwards; opacity:0; transform: translateY(8px); font-size:14px;}
+    .toast.ok{border-color: rgba(16,185,129,0.45);} .toast.err{border-color: rgba(255,92,122,0.45);} @keyframes toast-in{to{opacity:1; transform: translateY(0)}}
+    .footer-note{margin-top:10px; font-size:12px; color:var(--muted);}
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1 class="title">Roblox Multi‑Account Command Dashboard</h1>
-    </div>
+    <div class="header"><h1 class="title">Roblox Multi‑Account Command Dashboard</h1></div>
 
     <div class="callout" style="margin-bottom:16px;">
       <span class="dot"></span>
-      <div>
-        <strong>Important:</strong>
-        Use only .ROBLOSECURITY session cookies for accounts you own. This runs locally and performs real web API actions (Follow, AcceptFriends). Do not paste passwords.
-      </div>
+      <div><strong>Heads‑up:</strong> This page calls your backend at <code>window.API_BASE</code>. GitHub Pages itself cannot process commands. Use your own backend URL and keep cookies private.</div>
     </div>
 
     <div class="grid">
       <div class="card">
-        <label>
-          Accounts
-          <span class="count-badge"><span id="accountCount">0</span> loaded</span>
-          <span class="spacer" style="flex:1"></span>
+        <label>Accounts <span class="count-badge"><span id="accountCount">0</span> loaded</span>
+          <span style="flex:1"></span>
           <button id="saveAccounts" class="btn secondary">Save</button>
           <button id="clearAccounts" class="btn secondary">Clear</button>
         </label>
@@ -200,7 +101,6 @@ Alt1|_ANOTHER_COOKIE_HERE"></textarea>
         <div class="chips">
           <div class="chip" data-example="AcceptFriends">AcceptFriends</div>
           <div class="chip" data-example="Follow Builderman">Follow Builderman</div>
-          <div class="chip" data-example="Follow Roblox">Follow Roblox</div>
         </div>
 
         <div class="row" style="margin-top:14px;">
@@ -214,7 +114,7 @@ Alt1|_ANOTHER_COOKIE_HERE"></textarea>
         </div>
 
         <div class="footer-note">
-          Tip: Press Enter to run. Backend default: http://localhost:3000
+          Tip: Set window.API_BASE above to your backend. Test: YOUR_BACKEND/api/health should return {"ok":true}.
         </div>
       </div>
 
