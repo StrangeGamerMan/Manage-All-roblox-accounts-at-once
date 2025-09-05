@@ -1,23 +1,29 @@
 const accountsTextarea = document.getElementById('accounts');
+const commandInput = document.getElementById('commandInput');
 const output = document.getElementById('output');
 
-document.getElementById('loginAll').addEventListener('click', () => {
-  const lines = accountsTextarea.value.split('\n');
-  output.textContent = '';
-  lines.forEach((line, i) => {
-    const [username, password] = line.split(':');
-    if(username && password){
-      output.textContent += `Logged in account ${username}\n`;
-      // In a real safe setup, here you would initiate Roblox login in a browser session
-    }
-  });
-});
+function runCommandForAllAccounts(command) {
+    const lines = accountsTextarea.value.split('\n');
+    lines.forEach((line) => {
+        const [username, password] = line.split(':');
+        if (!username || !password) return;
 
-document.getElementById('acceptAllFriends').addEventListener('click', () => {
-  output.textContent += 'Accepted all friend requests for all accounts (simulated)\n';
-});
+        // Only safe commands here
+        if (command.toLowerCase().startsWith('follow ')) {
+            const userToFollow = command.split(' ')[1];
+            output.textContent += `${username} now follows ${userToFollow} (simulated)\n`;
+        } else if (command.toLowerCase() === 'acceptfriends') {
+            output.textContent += `${username} accepted all friend requests (simulated)\n`;
+        } else if (command.toLowerCase().startsWith('join ')) {
+            const placeId = command.split(' ')[1];
+            output.textContent += `${username} joined place ${placeId} (simulated)\n`;
+        } else {
+            output.textContent += `Command "${command}" not recognized or unsafe.\n`;
+        }
+    });
+}
 
-document.getElementById('followUser').addEventListener('click', () => {
-  const user = document.getElementById('followUsername').value;
-  output.textContent += `All accounts now follow ${user} (simulated)\n`;
+document.getElementById('runCommand').addEventListener('click', () => {
+    const cmd = commandInput.value.trim();
+    if(cmd) runCommandForAllAccounts(cmd);
 });
