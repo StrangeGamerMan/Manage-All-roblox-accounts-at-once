@@ -1,15 +1,9 @@
 {
   "name": "roblox-multi-account-dashboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
-  "description": "Local tool to run limited Roblox account actions via web APIs",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2"
-  },
-  "engines": {
-    "node": ">=18"
-  }
+  "description": "Local tool to run limited Roblox account actions via web APIs with a modern UI",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.19.2" },
+  "engines": { "node": ">=18" }
 }
