@@ -1,4 +1,4 @@
-// Uses window.API_BASE if set (for GitHub Pages), otherwise auto-detects a local backend.
+// Frontend uses window.API_BASE (set in index.html) or falls back to auto-detect.
 
 const accountsTextarea = document.getElementById('accounts');
 const commandInput = document.getElementById('commandInput');
@@ -36,19 +36,15 @@ function candidateBases() {
   if (typeof window !== 'undefined' && window.API_BASE) list.push(String(window.API_BASE).replace(/\/$/, ''));
   const saved = localStorage.getItem(LS_API_BASE);
   if (saved) list.push(saved);
-  // Same origin (if served by the Node server)
   if (/^https?:\/\//i.test(location.origin)) list.push(location.origin);
-  // Common locals
   ['http://127.0.0.1:3000','http://localhost:3000','http://127.0.0.1:3333','http://localhost:3333']
     .forEach(b => { if (!list.includes(b)) list.push(b); });
   return list;
 }
 
 async function isHealthy(base) {
-  try {
-    const res = await fetch(base + '/api/health', { cache: 'no-store', mode: 'cors' });
-    return res.ok;
-  } catch { return false; }
+  try { const res = await fetch(base + '/api/health', { cache: 'no-store', mode: 'cors' }); return res.ok; }
+  catch { return false; }
 }
 
 async function detectApiBase() {
