@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: manage-all-roblox-accounts-at-once
+    env: node
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ALLOW_ORIGIN
+        value: https://YOUR-PAGES-URL
