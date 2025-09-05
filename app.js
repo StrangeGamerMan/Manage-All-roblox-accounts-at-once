@@ -2,10 +2,32 @@ const accountsTextarea = document.getElementById('accounts');
 const commandInput = document.getElementById('commandInput');
 const output = document.getElementById('output');
 const runBtn = document.getElementById('runCommand');
+const saveBtn = document.getElementById('saveAccounts');
+const clearBtn = document.getElementById('clearAccounts');
+const clearLogBtn = document.getElementById('clearLog');
+const chips = document.querySelectorAll('[data-example]');
+const bar = document.getElementById('bar');
+const accountCount = document.getElementById('accountCount');
+const toasts = document.getElementById('toasts');
 
-function append(line) {
-  output.textContent += line + '\n';
+function append(line, cls = '') {
+  const div = document.createElement('div');
+  div.className = `log-line ${cls}`;
+  div.textContent = line;
+  output.appendChild(div);
   output.scrollTop = output.scrollHeight;
+}
+
+function showToast(text, type = '') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = text;
+  toasts.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateY(8px)';
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
 }
 
 function parseAccounts(raw) {
@@ -14,39 +36,56 @@ function parseAccounts(raw) {
     .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
-      // Allow "Label|cookie" OR "Label:cookie"
       const sep = line.includes('|') ? '|' : (line.includes(':') ? ':' : null);
       if (!sep) return null;
       const [labelRaw, cookieRaw] = line.split(sep);
       const label = (labelRaw || '').trim();
       let cookie = (cookieRaw || '').trim();
-
-      // If they pasted ".ROBLOSECURITY=XXXXX", extract the value
       const idx = cookie.indexOf('.ROBLOSECURITY=');
       if (idx !== -1) cookie = cookie.slice(idx + '.ROBLOSECURITY='.length);
-
       if (!label || !cookie) return null;
       return { label, cookie };
     })
     .filter(Boolean);
 }
 
-runBtn.addEventListener('click', async () => {
-  output.textContent = '';
+function updateAccountCount() {
+  const count = parseAccounts(accountsTextarea.value).length;
+  accountCount.textContent = count;
+}
+
+function setLoading(isLoading) {
+  if (isLoading) {
+    runBtn.classList.add('loading');
+    runBtn.setAttribute('disabled', 'true');
+  } else {
+    runBtn.classList.remove('loading');
+    runBtn.removeAttribute('disabled');
+  }
+}
+
+function setProgress(pct) {
+  bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+}
+
+async function run() {
   const cmd = commandInput.value.trim();
   if (!cmd) {
-    append('Please enter a command.');
+    showToast('Enter a command.', 'err');
+    commandInput.focus();
     return;
   }
-
   const accounts = parseAccounts(accountsTextarea.value);
   if (!accounts.length) {
-    append('Please add at least one account line in the format: Label|.ROBLOSECURITY cookie');
+    showToast('Add at least one account line: Label|.ROBLOSECURITY cookie', 'err');
+    accountsTextarea.focus();
     return;
   }
 
-  append(`Running "${cmd}" for ${accounts.length} account(s)...`);
-  runBtn.disabled = true;
+  output.textContent = '';
+  append(`Running "${cmd}" for ${accounts.length} account(s)...`, 'muted');
+  setLoading(true);
+  setProgress(18);
 
   try {
     const res = await fetch('/api/run', {
@@ -55,26 +94,91 @@ runBtn.addEventListener('click', async () => {
       body: JSON.stringify({ accounts, command: cmd })
     });
 
+    setProgress(45);
+
     if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      append(`Server error (${res.status}): ${txt}`);
-    } else {
-      const data = await res.json();
-      if (Array.isArray(data.results)) {
-        for (const r of data.results) {
-          if (r.ok) {
-            append(`✔ ${r.label}: ${r.message}`);
-          } else {
-            append(`✖ ${r.label}: ${r.message}`);
-          }
-        }
-      } else {
-        append('Unexpected server response.');
-      }
+      const text = await res.text().catch(() => '');
+      append(`Server error (${res.status}): ${text}`, 'err');
+      showToast(`Server error ${res.status}`, 'err');
+      return;
     }
+
+    const data = await res.json().catch(() => ({}));
+    if (!Array.isArray(data.results)) {
+      append('Unexpected response from server.', 'err');
+      return;
+    }
+
+    // Animate the rendering of results
+    let i = 0;
+    for (const r of data.results) {
+      i++;
+      const prefix = r.ok ? '✔' : '✖';
+      const cls = r.ok ? 'ok' : 'err';
+      append(`${prefix} ${r.label}: ${r.message}`, cls);
+      setProgress(45 + Math.round((i / data.results.length) * 55));
+      await new Promise(r => setTimeout(r, 90));
+    }
+
+    showToast('Done!', 'ok');
   } catch (e) {
-    append(`Request failed: ${e.message || e}`);
+    append(`Request failed: ${e.message || e}`, 'err');
+    showToast('Request failed', 'err');
   } finally {
-    runBtn.disabled = false;
+    setLoading(false);
+    setTimeout(() => setProgress(0), 1200);
+  }
+}
+
+// Event wiring
+runBtn.addEventListener('click', run);
+commandInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    run();
   }
 });
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'enter') {
+    run();
+  }
+});
+chips.forEach(ch => ch.addEventListener('click', () => {
+  commandInput.value = ch.getAttribute('data-example');
+  commandInput.focus();
+}));
+
+clearLogBtn.addEventListener('click', () => {
+  output.textContent = '';
+});
+
+// Local storage helpers
+const LS_ACCOUNTS = 'rbx.multi.accounts';
+const LS_COMMAND = 'rbx.multi.lastCommand';
+
+function loadFromStorage() {
+  const a = localStorage.getItem(LS_ACCOUNTS);
+  if (a) accountsTextarea.value = a;
+  const c = localStorage.getItem(LS_COMMAND);
+  if (c) commandInput.value = c;
+  updateAccountCount();
+}
+function saveToStorage() {
+  localStorage.setItem(LS_ACCOUNTS, accountsTextarea.value);
+  localStorage.setItem(LS_COMMAND, commandInput.value.trim());
+  showToast('Saved locally', 'ok');
+}
+saveBtn.addEventListener('click', saveToStorage);
+clearBtn.addEventListener('click', () => {
+  accountsTextarea.value = '';
+  updateAccountCount();
+  saveToStorage();
+});
+
+accountsTextarea.addEventListener('input', updateAccountCount);
+commandInput.addEventListener('input', () => {
+  localStorage.setItem(LS_COMMAND, commandInput.value.trim());
+});
+
+loadFromStorage();
+append('Ready. Paste accounts, type a command, and click Run.', 'muted');
